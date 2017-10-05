@@ -19,10 +19,10 @@ library(corrplot)
 library(rattle)
 #download files abd read in training and test data
 fileurl<-"https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv"
-#download.file(fileurl,destfile = "./training.csv")
+download.file(fileurl,destfile = "./training.csv")
 training_org<-read.csv("./training.csv",na.strings = c("NA", "#DIV/0!", ""))
 fileurl<-"https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv"
-#download.file(fileurl,destfile = "./test.csv")
+download.file(fileurl,destfile = "./test.csv")
 testing1<-read.csv("./test.csv",na.strings = c("NA", "#DIV/0!", ""))
 
 #removing irrelevant first 7 columns
