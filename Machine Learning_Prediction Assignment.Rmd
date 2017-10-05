@@ -1,0 +1,88 @@
+---
+title: "Machine Learning - Prediction Assignment"
+output: 
+  html_document:
+    keep_md: true
+---
+## **Executive Summary**
+###In this project, the author seeks the best model to predict how well an individual exercises based on the data collected from accelerometers on the belt, forearm, arm, and dumbell of 6 participants.  Both training and test data sets are provided.  The training set is further divided into training and validation sets.  Both Random Forrest and GBM modelling techniques are used and it is found that Random Forrest provides very high prediction accuracy rate in the order of 99.4%,   GBM achieves slighlty lower accuracy rate at 96%, however it takes less time to process.
+
+
+### **Load, clean and separate data**
+### Only variables without many NAs are kept -> 53 variables out of 160
+### Training set is further divided up into training and validation sets due to the large number of data samples available
+```{r load, echo=TRUE}
+library(ggplot2)
+library(caret)
+library(GGally)
+library(corrplot)
+library(rattle)
+#download files abd read in training and test data
+fileurl<-"https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv"
+#download.file(fileurl,destfile = "./training.csv")
+training_org<-read.csv("./training.csv",na.strings = c("NA", "#DIV/0!", ""))
+fileurl<-"https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv"
+#download.file(fileurl,destfile = "./test.csv")
+testing1<-read.csv("./test.csv",na.strings = c("NA", "#DIV/0!", ""))
+
+#removing irrelevant first 7 columns
+training_org<-training_org[,-c(1:7)]
+testing1<-testing1[,-c(1:7)]
+
+#Clean training data by removing unncessary variables
+#only use data columns with reals values in more than half of the cells
+usefulcolumns<-apply(!is.na(training_org),2,sum)>10000
+training_org<-training_org[,usefulcolumns]
+testing1<-testing1[,usefulcolumns]
+
+#Due to large size of training set, it is feasible to further divide training into training and validation data
+set.seed(10000)
+inTrain<-createDataPartition(training_org$classe,p=0.7,list=FALSE)
+training<-training_org[inTrain,]
+validation<-training_org[-inTrain,]
+table(training$classe)
+dim(training)
+dim(validation)
+dim(testing1)
+
+```
+
+
+### **Predict and validate using Random Forest model**
+
+```{r random_forest02, echo=TRUE}
+date()
+modFit1 <- train(classe ~ ., data=training, method="rf", trControl=trainControl(method="cv",number=5),prox=TRUE, allowParallel=TRUE)
+date()
+predictvalidation1<-predict(modFit1,validation)
+confusionMatrix(predictvalidation1, validation$classe)
+predicttesting1<-predict(modFit1,testing1)
+#Predicted Classe on test set using Random Forrest is
+predicttesting1
+```
+### Random Forest prediction taks about 45 min, achieves **99.4%** accuracy on validation set (5885 samples) with 95% CI of 99.1% to 99.6% 
+
+###**Prediction and Validation using GBM model (boosting with trees)**
+
+```{r gbm_prediction, echo=TRUE}
+date()
+modFit2 <- train(classe ~ ., data=training, method="gbm",verbose=FALSE)
+date()
+predictvalidation2<-predict(modFit2,validation)
+confusionMatrix(predictvalidation2, validation$classe)
+predicttesting2<-predict(modFit2,testing1)
+#Predicted Classe on test set using GBM is
+predicttesting2
+```
+### GBM prediction takes about 30 min, achieves *96.1%** accuracy on validation set.
+
+### Author considered combining the predictors in RF and GBM, however given high accuracy achieved using RS, this is unlikely to yield any meaningful improvement
+
+### Conclusion... **Random Forest** yields the most accurate prediction outcome with accuracy of *99,4* with 95% CI of *99.1  - 99.6%* on the validation set.  It is used to predict the test set.
+
+### **Appendix 1 - Cross correlation plot **
+```{r cross_correlation, echo=FALSE}
+t2<-training[,-53]
+M <- cor(t2)
+corrplot(M, method="circle")
+```
